@@ -1,1 +1,7 @@
-const CACHE='central-financeira-evolucao-v2-1';const FILES=['./','./index.html','./manifest.webmanifest'];self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)));self.skipWaiting()});self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;event.respondWith(fetch(event.request).then(response=>{if(response.ok&&new URL(event.request.url).origin===self.location.origin){const clone=response.clone();caches.open(CACHE).then(c=>c.put(event.request,clone))}return response}).catch(()=>caches.match(event.request)))})
+// Atualização v3: remove somente caches desta aplicação e desativa o worker v2.
+// Não altera localStorage nem outros caches do domínio.
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('central-financeira-evolucao-')).map(k=>caches.delete(k)));
+ await self.registration.unregister();await self.clients.claim();
+})()));
