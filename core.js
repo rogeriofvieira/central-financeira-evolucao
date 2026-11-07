@@ -5,6 +5,7 @@ const id=()=>crypto.randomUUID();
 const dateOK=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s))&&new Date(s+'T12:00:00Z').toISOString().slice(0,10)===s;
 function today(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function month(base,n){const [y,m,d]=base.split('-').map(Number),t=new Date(y,m-1+n,1);return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(Math.min(d,new Date(t.getFullYear(),t.getMonth()+1,0).getDate())).padStart(2,'0')}`}
+function fromParts(period,day){if(!/^\d{4}-\d{2}$/.test(period)||!/^\d{1,2}$/.test(String(day)))throw Error('Selecione mês, ano e dia válidos.');const date=period+'-'+String(day).padStart(2,'0');if(!dateOK(date))throw Error('Este dia não existe no mês e ano selecionados.');return date}
 function normalize(input){
  if(!input||!['entries','accounts','entities','categories'].every(k=>Array.isArray(input[k])))throw Error('Backup incompatível: faltam listas financeiras.');
  const db=structuredClone(input);
@@ -18,7 +19,8 @@ function normalize(input){
  if(k==='contracts'){if(!['insurance','subscriptions'].includes(x.kind)||!dateOK(x.endDate)||x.endDate<x.date)throw Error('Contrato inválido')}
  else if(!['income','expense'].includes(x.type))throw Error('Tipo de movimentação inválido');
  }else if(typeof x.name!=='string'||!x.name.trim())throw Error('Cadastro inválido em '+k);
- if(k==='accounts'&&!Number.isFinite(Number(x.opening||0)))throw Error('Saldo de conta inválido');
+ if(k==='accounts'){delete x.opening;delete x.openingDate;}
+ if(k==='entities'){x.email=typeof x.email==='string'?x.email:'';}
  }
  for(const x of db.entries)if(x.sourceId&&!db.contracts.some(c=>c.id===x.sourceId))throw Error('Saída vinculada sem contrato: backup não restaurado.');
  db.version=3;for(const name of ['Seguros','Assinaturas'])if(!db.categories.some(x=>x.name===name))db.categories.push({id:id(),name});
@@ -42,5 +44,5 @@ function remove(db,list,itemId,mode){
  db[list]=db[list].filter(x=>!(x.id===item.id||(mode==='future'&&item.seriesId&&x.seriesId===item.seriesId&&future(x))));sync(db);
 }
 function alerts(db,now=today()){const a=Date.parse(now+'T12:00:00Z'),groups=new Map();for(const c of db.contracts){const days=Math.round((Date.parse(c.endDate+'T12:00:00Z')-a)/86400000);if(days>=0&&days<=3){const key=(c.seriesId||c.id)+'|'+c.endDate;if(!groups.has(key))groups.set(key,{...c,days})}}return [...groups.values()]}
-const api={today,dateOK,month,normalize,sync,occurrences,remove,alerts};root.Core=api;if(typeof module!=='undefined')module.exports=api;
+const api={fromParts,today,dateOK,month,normalize,sync,occurrences,remove,alerts};root.Core=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
