@@ -23,7 +23,7 @@ jobs:
       - name: Preparar somente arquivos públicos da aplicação
         run: |
           mkdir -p _site
-          cp index.html style.css core.js app.js extras.js sw.js manifest.webmanifest .nojekyll _site/
+          cp index.html style.css core.js config.js vault.js drive.js storage.js bootstrap.js app.js extras.js sw.js manifest.webmanifest privacy.html .nojekyll _site/
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
